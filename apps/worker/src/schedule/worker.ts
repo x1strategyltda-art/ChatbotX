@@ -14,6 +14,7 @@ import {
 } from "../trigger/datetime-trigger-scanner"
 import { enqueueBroadcast } from "./handlers/enqueue-broadcast"
 import { finalizeBroadcasts } from "./handlers/finalize-broadcasts"
+import { maintainMacPartitions } from "./handlers/maintain-mac-partitions"
 import { prepareBroadcast } from "./handlers/prepare-broadcast"
 import { processBroadcastContacts } from "./handlers/process-broadcast-contacts"
 import { registerSchedules } from "./handlers/register-schedules"
@@ -68,6 +69,10 @@ async function startScheduleWorker() {
 
         case ScheduleJobData.scanSmartDelay:
           await scanSmartDelay()
+          return
+
+        case ScheduleJobData.maintainMacPartitions:
+          await maintainMacPartitions()
           return
 
         default:

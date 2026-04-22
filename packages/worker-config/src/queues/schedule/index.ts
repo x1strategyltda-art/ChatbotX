@@ -14,6 +14,8 @@ export const ScheduleJobData = {
   evaluateTriggers: "evaluateTriggers",
   cleanupTriggers: "cleanupTriggers",
   scanSmartDelay: "scanSmartDelay",
+  reconcileMac: "reconcileMac",
+  maintainMacPartitions: "maintainMacPartitions",
 } as const
 
 export type ScheduleJobBroadcast = {
@@ -57,6 +59,16 @@ export type ScheduleJobScanSmartDelay = {
   data: Record<string, never>
 }
 
+export type ScheduleJobReconcileMac = {
+  type: typeof ScheduleJobData.reconcileMac
+  data: Record<string, never>
+}
+
+export type ScheduleJobMaintainMacPartitions = {
+  type: typeof ScheduleJobData.maintainMacPartitions
+  data: Record<string, never>
+}
+
 export type ScheduleJobData =
   | ScheduleJobBroadcast
   | ScheduleJobEnqueueBroadcast
@@ -65,6 +77,8 @@ export type ScheduleJobData =
   | ScheduleJobEvaluateTriggers
   | ScheduleJobCleanupTriggers
   | ScheduleJobScanSmartDelay
+  | ScheduleJobReconcileMac
+  | ScheduleJobMaintainMacPartitions
 
 export const scheduleQueue =
   process.env.NEXT_PHASE === "phase-production-build"
