@@ -59,6 +59,7 @@ import { unassignConversationStep } from "./unassign-conversation"
 import { unfollowConversationStep } from "./unfollow-conversation"
 import { unsubscribeBroadcastStep } from "./unsubscribe-broadcast"
 import { unsubscribeSequenceStep } from "./unsubscribe-sequence"
+import whatsappOptionListStep from "./whatsapp-option-list"
 
 // biome-ignore lint/suspicious/noExplicitAny: wip
 export const allSteps: Record<StepType, StepDefinition<any> | undefined> = {
@@ -138,7 +139,7 @@ export const allSteps: Record<StepType, StepDefinition<any> | undefined> = {
   [stepTypes.enum.emailCode]: emailCodeStep,
   [stepTypes.enum.emailHeader]: emailHeaderStep,
   [stepTypes.enum.typing]: typingStep,
-  [stepTypes.enum.whatsappOptionList]: undefined,
+  [stepTypes.enum.whatsappOptionList]: whatsappOptionListStep,
 }
 
 export const DynamicStepEditor = memo(
