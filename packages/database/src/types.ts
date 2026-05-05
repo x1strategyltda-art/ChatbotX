@@ -84,3 +84,8 @@ export type FlowAnalyticsSessionModel =
 export type FlowNodeStatModel = typeof schema.flowNodeStatModel.$inferSelect
 export type MagicLinkStatModel = typeof schema.magicLinkStatModel.$inferSelect
 export type RefLinkStatModel = typeof schema.refLinkStatModel.$inferSelect
+export type ProductModel = typeof schema.productModel.$inferSelect
+export type ProductVariantOptionModel =
+  typeof schema.productVariantOptionModel.$inferSelect
+export type ProductVariantModel = typeof schema.productVariantModel.$inferSelect
+export type ProductAddonModel = typeof schema.productAddonModel.$inferSelect

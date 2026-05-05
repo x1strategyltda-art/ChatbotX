@@ -14,31 +14,34 @@ import {
   Volume2Icon,
 } from "lucide-react"
 import Image from "next/image"
-import { useParams } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { useMemo, useRef, useState } from "react"
-import { useFormContext } from "react-hook-form"
+import { useMemo, useRef } from "react"
+import { useFormContext, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 
 export function DirectUploadOrInsertLink({
   parentName,
   fileType,
+  uploadPath,
 }: {
   parentName: string
   fileType: FileType
+  uploadPath: string
 }) {
-  const params = useParams<{ workspaceId: string; flowId: string }>()
   const t = useTranslations()
 
   const { setValue, getValues } = useFormContext()
-  const [uploadMode, setUploadMode] = useState(getValues(`${parentName}.mode`))
-  const publicUrl = getValues(`${parentName}.url`)
+  const uploadMode = useWatch({ name: `${parentName}.mode` }) as
+    | string
+    | undefined
+  const publicUrl = useWatch({ name: `${parentName}.url` }) as
+    | string
+    | undefined
   const stepId = getValues(`${parentName}.id`)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
 
   const chooseInsertLink = () => {
     setValue(`${parentName}.mode`, "link")
-    setUploadMode("link")
   }
 
   const chooseUploadFile = () => {
@@ -102,7 +105,7 @@ export function DirectUploadOrInsertLink({
               setValue(`${parentName}.url`, finalUrl)
             }}
             triggerRef={triggerRef}
-            uploadPath={`public/space/${params.workspaceId}/flows/${params.flowId}/steps/${stepId}`}
+            uploadPath={uploadPath}
           />
           {publicUrl && publicUrl.length > 0 ? (
             <Button

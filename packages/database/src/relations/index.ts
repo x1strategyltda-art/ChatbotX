@@ -50,6 +50,7 @@ import { messageRelations } from "./message"
 import { organizationRelations } from "./organization"
 import { organizationMemberRelations } from "./organization-member"
 import { planRelations } from "./plan"
+import { productRelations } from "./product"
 import { reflinkRelations } from "./reflink"
 import { savedReplyRelations } from "./save-reply"
 import { sequenceRelations } from "./sequence"
@@ -144,4 +145,5 @@ export const relations = {
   ...integrationInstagramRelations,
   ...flowAnalyticsSessionRelations,
   ...flowNodeStatRelations,
+  ...productRelations,
 }

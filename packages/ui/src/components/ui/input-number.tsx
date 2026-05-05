@@ -115,7 +115,7 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(
     }
 
     return (
-      <div className="flex items-center">
+      <div className="flex w-full items-center">
         <NumericFormat
           value={value}
           onValueChange={handleChange}

@@ -304,6 +304,7 @@ export function UpdateMessengerForm({
                           <DirectUploadOrInsertLink
                             fileType={fileTypes.enum.image}
                             parentName={`personas.${index}.profilePicture`}
+                            uploadPath={`public/space/${workspaceId}/messenger/personas`}
                           />
                         </CardContent>
                       </Card>
