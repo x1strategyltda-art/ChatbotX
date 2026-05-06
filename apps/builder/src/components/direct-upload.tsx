@@ -23,10 +23,12 @@ export function DirectUploadOrInsertLink({
   parentName,
   fileType,
   uploadPath,
+  onSuccess,
 }: {
   parentName: string
   fileType: FileType
   uploadPath: string
+  onSuccess?: (url: string) => void
 }) {
   const t = useTranslations()
 
@@ -102,7 +104,11 @@ export function DirectUploadOrInsertLink({
               })
             }}
             onUploadSuccess={(_filePath, _file, finalUrl) => {
-              setValue(`${parentName}.url`, finalUrl)
+              if (onSuccess) {
+                onSuccess(finalUrl)
+              } else {
+                setValue(`${parentName}.url`, finalUrl)
+              }
             }}
             triggerRef={triggerRef}
             uploadPath={uploadPath}
@@ -158,6 +164,22 @@ export function DirectUploadOrInsertLink({
             name={`${parentName}.url`}
             placeholder={t("fields.url.placeholder")}
           />
+          {onSuccess && (
+            <Button
+              disabled={!publicUrl}
+              onClick={() => {
+                if (publicUrl) {
+                  onSuccess(publicUrl)
+                  setValue(`${parentName}.url`, "")
+                  setValue(`${parentName}.mode`, "file")
+                }
+              }}
+              size="sm"
+              type="button"
+            >
+              {t("actions.add")}
+            </Button>
+          )}
         </div>
       )}
     </>
