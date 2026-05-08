@@ -2,7 +2,11 @@ import ky from "ky"
 import { API_URL, DEFAULT_API_VERSION } from "../constants"
 import { WhatsappException } from "../exception"
 import { logger } from "../lib/logger"
-import type { WhatsappAuthValue, WhatsappPagination } from "../schema"
+import type {
+  ListMessageTemplatesReponse,
+  MessageTemplateEntity,
+  WhatsappAuthValue,
+} from "../schema"
 import type { WhatsappPhoneNumberResponse } from "./phone-number"
 
 export type WhatsappWabaMMLite = {
@@ -57,58 +61,6 @@ export async function findWaba(props: {
       "Unable to find WhatsApp's business account",
     ).setOriginError(error)
   }
-}
-
-export type WhatsappFlow = {
-  id: string
-  name: string
-  status: string
-  categories: string[]
-  validation_errors: unknown[]
-}
-
-export type ListFlowsResponse = {
-  data: WhatsappFlow[]
-  paging: WhatsappPagination
-}
-export async function listFlows({
-  auth,
-}: {
-  auth: WhatsappAuthValue
-}): Promise<ListFlowsResponse> {
-  const { version = DEFAULT_API_VERSION } = auth
-
-  try {
-    return await ky
-      .get<ListFlowsResponse>(
-        `${API_URL}/${version}/${auth.metadata.wabaId}/flows`,
-        {
-          headers: {
-            Authorization: `Bearer ${auth.tokens.accessToken}`,
-          },
-        },
-      )
-      .json()
-  } catch (e) {
-    logger.error(e, "Failed to list flows")
-    throw new WhatsappException("Failed to list flows").setOriginError(e)
-  }
-}
-
-export type ListMessageTemplatesReponse = {
-  data: MessageTemplateEntity[]
-  paging: {
-    next: string
-  }
-}
-
-export type MessageTemplateEntity = {
-  id: string
-  name: string
-  status: "APPROVED" | "PENDING" | "REJECTED"
-  language: string
-  category: "AUTHENTICATION" | "MARKETING" | "UTILITY"
-  components: JSON[]
 }
 
 export type CreateMessageTemplateProps = {

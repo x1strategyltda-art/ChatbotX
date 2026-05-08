@@ -32,6 +32,10 @@ import {
 } from "../../lib/db"
 import { logger } from "../../lib/logger"
 import { flowStepHandlers } from "./step"
+import {
+  applyWhatsappFlowResponseSideEffects,
+  findWhatsappFlowStepByButtonId,
+} from "./whatsapp-flow-response"
 
 export type ExecuteMultipleStepsProps = {
   conversation: ConversationModel
@@ -322,6 +326,27 @@ export async function runFlowPostback(
 
   if (!foundedButton) {
     return
+  }
+
+  const waFlowResponse = data.payload?.waFlowResponse
+  if (
+    waFlowResponse &&
+    typeof waFlowResponse === "object" &&
+    parsedAction.buttonId
+  ) {
+    const whatsappFlowStep = findWhatsappFlowStepByButtonId(
+      nodes,
+      parsedAction.buttonId,
+    )
+    if (whatsappFlowStep) {
+      await applyWhatsappFlowResponseSideEffects({
+        workspaceId: conversation.workspaceId,
+        contactId: conversation.contactId,
+        contactInbox,
+        step: whatsappFlowStep,
+        flowResponse: waFlowResponse,
+      })
+    }
   }
 
   if (data.webhookType !== IntegrationJobAction.messageStatus) {

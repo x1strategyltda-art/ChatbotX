@@ -15,6 +15,7 @@ import { foldersAPI } from "@/features/folders/api"
 import { inboxesAPI } from "@/features/inboxes/api"
 import { integrationSmtpAPI } from "@/features/integration-smtp/api"
 import { integrationWhatsappAPIs } from "@/features/integration-whatsapp/api"
+import { whatsappFlowAPIs } from "@/features/integration-whatsapp/flows/api"
 import { whatsappMessageTemplateAPIs } from "@/features/integration-whatsapp/message-templates/api"
 import { messagesAPI } from "@/features/messages/api"
 import { savedRepliesAPI } from "@/features/saved-replies/api"
@@ -43,6 +44,7 @@ export const router = {
   integrationSmtpAPI,
   integrationWhatsappAPIs,
   whatsappMessageTemplateAPIs,
+  whatsappFlowAPIs,
   savedRepliesAPI,
   sequencesAPI,
   aiFilesAPI,

@@ -76,6 +76,9 @@ export type IntegrationJobSendFlowPostback = {
     action: string
     ref?: string | null
     webhookType?: string
+    payload?: {
+      waFlowResponse?: Record<string, unknown> | string
+    }
   }
 }
 

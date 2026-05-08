@@ -1,11 +1,11 @@
 import { db, eq } from "@chatbotx.io/database/client"
-import { messageModel } from "@chatbotx.io/database/schema"
+import { messageModel, whatsappFlowModel } from "@chatbotx.io/database/schema"
 import type {
   ContactInboxModel,
   ConversationModel,
 } from "@chatbotx.io/database/types"
 import { getStoragePrefix, uploader } from "@chatbotx.io/filesystem"
-import type { MetadataPayload } from "@chatbotx.io/flow-config"
+import { type MetadataPayload, stepTypes } from "@chatbotx.io/flow-config"
 import type { SendFlowStepData } from "@chatbotx.io/sdk"
 import type {
   ChatJobSendExternalMessage,
@@ -125,6 +125,27 @@ export async function sendFlowStepToExternal({
     return {}
   }
 
+  let resolvedStep: SendFlowStepData = step
+
+  if (
+    step.stepType === stepTypes.enum.whatsappFlow &&
+    step.flow.id &&
+    !step.flow.sourceId
+  ) {
+    const [row] = await db
+      .select({ sourceId: whatsappFlowModel.sourceId })
+      .from(whatsappFlowModel)
+      .where(eq(whatsappFlowModel.id, step.flow.id))
+      .limit(1)
+
+    if (row?.sourceId) {
+      resolvedStep = {
+        ...step,
+        flow: { ...step.flow, sourceId: row.sourceId },
+      }
+    }
+  }
+
   const result =
     await integrationDetail.channels?.channel?.message?.sendFlowStep?.({
       ctx: {
@@ -139,7 +160,7 @@ export async function sendFlowStepToExternal({
         contact: contactInbox,
         flowId,
         flowVersionId,
-        step,
+        step: resolvedStep,
         metadata,
       },
     })
