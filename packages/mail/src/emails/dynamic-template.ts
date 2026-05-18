@@ -61,7 +61,7 @@ export function elementToMjml(element: MailElementSchema): string {
           <mj-column>
             <mj-raw>
               <div style="font-size:20px;font-weight:700;color:#1d1c1d;line-height:28px;padding:0;">
-                ${escapeHtml(element.text)}
+                ${element.text}
               </div>
             </mj-raw>
           </mj-column>
@@ -73,7 +73,7 @@ export function elementToMjml(element: MailElementSchema): string {
           <mj-column>
             <mj-raw>
               <div style="font-size:16px;color:#3c3f44;line-height:24px;padding:0;">
-                ${escapeHtml(element.text)}
+                ${element.text}
               </div>
             </mj-raw>
           </mj-column>

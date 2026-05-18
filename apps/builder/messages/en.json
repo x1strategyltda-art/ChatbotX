@@ -2033,5 +2033,9 @@
   "qrCodeGenerator": {
     "title": "QR Code Generator",
     "description": "Create and manage your QR codes."
+  },
+  "unsubscribePage": {
+    "title": "You have been unsubscribed.",
+    "description": "You will no longer receive emails from this sender."
   }
 }
