@@ -1,22 +1,82 @@
-import { aiContextService } from "@chatbotx.io/ai/server"
+import { systemFunctionNames } from "@chatbotx.io/ai"
 import { automatedResponseService } from "@chatbotx.io/automated-response"
 import { db } from "@chatbotx.io/database/client"
+import { aiMessageRoles } from "@chatbotx.io/database/partials"
+import {
+  DOCX_MIME_TYPES,
+  IMAGE_MIME_TYPES,
+  PDF_MIME_TYPES,
+} from "@chatbotx.io/sdk"
 import type { IntegrationJobProcessAutomatedResponse } from "@chatbotx.io/worker-config"
 import type { ModelMessage } from "ai"
+import { normalizeError } from "universal-error-normalizer"
 import { detectConversationAndContactInbox } from "../../../lib/db"
 import { logger } from "../../../lib/logger"
 import { replyByAI } from "./replies"
 import { trackBotResponse } from "./track-bot-response"
 
+const SUPPORTED_DOCUMENT_MIME_TYPES = new Set<string>([
+  ...PDF_MIME_TYPES,
+  ...DOCX_MIME_TYPES,
+])
+const SUPPORTED_IMAGE_MIME_TYPES = new Set<string>(IMAGE_MIME_TYPES)
+
+function normalizeMimeType(value: string): string {
+  return value.toLowerCase().split(";")[0]?.trim() ?? ""
+}
+
+function isSupportedDocumentMimeType(mimeType: string): boolean {
+  return SUPPORTED_DOCUMENT_MIME_TYPES.has(normalizeMimeType(mimeType))
+}
+
+function isSupportedImageMimeType(mimeType: string): boolean {
+  return SUPPORTED_IMAGE_MIME_TYPES.has(normalizeMimeType(mimeType))
+}
+
 export async function processAutomatedResponse(
   props: IntegrationJobProcessAutomatedResponse["data"],
 ) {
-  const { conversationId, contactInboxId } = props
+  const { conversationId, contactInboxId, messageId } = props
   const { conversation, contactInbox } =
     await detectConversationAndContactInbox({
       conversationId,
       contactInboxId,
     })
+
+  const triggerMessage = await db.query.messageModel.findFirst({
+    where: {
+      id: messageId,
+      conversationId: conversation.id,
+    },
+    columns: {
+      id: true,
+      text: true,
+      senderType: true,
+    },
+    with: {
+      attachments: {
+        columns: {
+          id: true,
+          fileType: true,
+          mimeType: true,
+        },
+      },
+    },
+  })
+  const triggerAttachments = triggerMessage?.attachments ?? []
+  const isFileOnlyTrigger =
+    triggerMessage?.senderType === "contact" &&
+    !triggerMessage.text &&
+    triggerAttachments.length > 0
+  const hasTriggerImage = triggerAttachments.some(
+    (attachment) =>
+      isSupportedImageMimeType(attachment.mimeType) ||
+      attachment.fileType === "image" ||
+      attachment.fileType === "gif",
+  )
+  const hasTriggerDocument = triggerAttachments.some((attachment) =>
+    isSupportedDocumentMimeType(attachment.mimeType),
+  )
 
   const repliedByAutomatedResponse = await automatedResponseService.process({
     conversation,
@@ -38,7 +98,7 @@ export async function processAutomatedResponse(
       await trackBotResponse({
         workspaceId: conversation.workspaceId,
         conversationId: conversation.id,
-        messageId: "",
+        messageId,
         hasResponse: false,
         responseType: "none",
         routeType: "fallback",
@@ -57,59 +117,38 @@ export async function processAutomatedResponse(
       return
     }
 
-    const aiContext = await aiContextService.getOrInitContext({
-      workspaceId: conversation.workspaceId,
-      conversationId: conversation.id,
+    const last100Messages = await db.query.messageModel.findMany({
+      where: { conversationId: conversation.id },
+      orderBy: (table, { desc }) => [desc(table.createdAt)],
+      limit: 100,
     })
-
-    let messages: ModelMessage[] = []
-    let summary = ""
-
-    if (aiContext) {
-      const latestContactMessage = await db.query.messageModel.findFirst({
-        where: {
-          conversationId: conversation.id,
-          senderType: "contact",
-        },
-        orderBy: (table, { desc }) => [desc(table.createdAt)],
-      })
-
-      if (latestContactMessage?.text) {
-        await aiContextService.appendHistory({
-          conversationId: conversation.id,
-          newMessages: [
-            {
-              message: {
-                role: "user",
-                content: latestContactMessage.text,
-              },
-              messageId: latestContactMessage.id,
-              createdAt: latestContactMessage.createdAt.getTime(),
-            },
-          ],
+    const messages: ModelMessage[] = []
+    for (const message of last100Messages) {
+      if (!message.text) {
+        continue
+      }
+      if (message.senderType === "contact") {
+        messages.push({
+          role: aiMessageRoles.enum.user,
+          content: message.text,
         })
+      } else if (
+        message.senderType === "user" ||
+        message.senderType === "bot"
+      ) {
+        messages.push({ role: "assistant", content: message.text })
       }
+    }
+    messages.reverse()
 
-      const refreshedContext = await aiContextService.getOrInitContext({
-        workspaceId: conversation.workspaceId,
-        conversationId: conversation.id,
+    if (isFileOnlyTrigger) {
+      messages.push({
+        role: aiMessageRoles.enum.user,
+        content: getFileOnlyPrompt({
+          hasDocument: hasTriggerDocument,
+          hasImage: hasTriggerImage,
+        }),
       })
-
-      if (refreshedContext) {
-        messages = aiContextService.mapContextToModelMessages(
-          refreshedContext.history,
-        )
-        summary = refreshedContext.summary
-      }
-    } else {
-      const last100Messages = await db.query.messageModel.findMany({
-        where: { conversationId: conversation.id },
-        orderBy: (table, { desc }) => [desc(table.createdAt)],
-        limit: 100,
-      })
-      const dbMessages = [...last100Messages].reverse()
-      const aiHistory = aiContextService.mapDbMessagesToContext(dbMessages)
-      messages = aiContextService.mapContextToModelMessages(aiHistory)
     }
 
     const startTime = Date.now()
@@ -117,7 +156,14 @@ export async function processAutomatedResponse(
       conversation,
       messages,
       aiAgent,
-      summary,
+      triggerMessageId: messageId,
+      fileOnlyTrigger: isFileOnlyTrigger,
+      allowedSystemFunctionIds: isFileOnlyTrigger
+        ? getFileOnlySystemFunctionIds({
+            hasDocument: hasTriggerDocument,
+            hasImage: hasTriggerImage,
+          })
+        : undefined,
     })
 
     if (aiResult) {
@@ -125,7 +171,7 @@ export async function processAutomatedResponse(
       await trackBotResponse({
         workspaceId: conversation.workspaceId,
         conversationId: conversation.id,
-        messageId: "",
+        messageId,
         hasResponse: true,
         responseType: "ai_agent",
         routeType: "agent",
@@ -142,7 +188,7 @@ export async function processAutomatedResponse(
     await trackBotResponse({
       workspaceId: conversation.workspaceId,
       conversationId: conversation.id,
-      messageId: "",
+      messageId,
       hasResponse: false,
       responseType: "ai_agent",
       routeType: "agent",
@@ -159,13 +205,46 @@ export async function processAutomatedResponse(
       },
     })
   } catch (error) {
+    const normalizedError = normalizeError(error)
     logger.error(
       {
-        error,
+        error: normalizedError,
         conversationId: conversation.id,
         workspaceId: conversation.workspaceId,
       },
       "[automated-response] triggerAutomatedResponse failed",
     )
   }
+}
+
+function getFileOnlySystemFunctionIds(input: {
+  hasDocument: boolean
+  hasImage: boolean
+}): string[] {
+  const systemFunctionIds: string[] = []
+
+  if (input.hasImage) {
+    systemFunctionIds.push(systemFunctionNames.imageReader)
+  }
+
+  if (input.hasDocument) {
+    systemFunctionIds.push(systemFunctionNames.documentReader)
+  }
+
+  return systemFunctionIds
+}
+
+function getFileOnlyPrompt(input: {
+  hasDocument: boolean
+  hasImage: boolean
+}): string {
+  if (input.hasImage && !input.hasDocument) {
+    return "I uploaded an image. Please analyze it, provide a short summary, then ask what specific detail I want to know more about."
+  }
+
+  if (input.hasDocument && !input.hasImage) {
+    return "I uploaded a document. Please read it, provide a short summary, then ask what specific part I want to know more about."
+  }
+
+  return "I uploaded one or more files. Please inspect the supported attachment, provide a short summary, then ask what specific detail I want to know more about."
 }
