@@ -9,7 +9,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth/auth"
 import { httpLogger } from "./lib/log"
 
-const publicRoutes = ["/integrations", "/r"]
+const publicRoutes = ["/integrations", "/r", "/email-topic"]
 const signinPath = "/auth/sign-in"
 
 async function _logRequest(request: NextRequest) {

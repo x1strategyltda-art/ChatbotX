@@ -21,6 +21,7 @@ import { useTranslations } from "next-intl"
 import { useCallback } from "react"
 import { useFieldArray, useFormContext } from "react-hook-form"
 import { TiptapEditorField } from "@/components/tiptap/tiptap-editor-field"
+import { useEmailTopicSelectOptions } from "@/features/email-topics/provider/email-topic-hook"
 import { useSmtpInboxOptions } from "@/features/inboxes/provider/inbox-hook"
 import { PageElementBuilder } from "../../components/page-element-builder"
 import { PAGE_ELEMENTS } from "./page-node-menu"
@@ -33,6 +34,7 @@ export default function EmailStepEditor(props: EmailStepEditorProps) {
   const { parentName } = props
   const t = useTranslations()
   const smtpInboxOptions = useSmtpInboxOptions()
+  const emailTopicOptions = useEmailTopicSelectOptions()
   const { control } = useFormContext()
 
   const { fields, append, move, remove } = useFieldArray({
@@ -58,7 +60,7 @@ export default function EmailStepEditor(props: EmailStepEditorProps) {
       <SelectField
         label={t("fields.topicId.label")}
         name={`${parentName}.topicId`}
-        options={[]}
+        options={emailTopicOptions}
       />
 
       <TiptapEditorField

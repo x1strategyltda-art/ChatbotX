@@ -32,6 +32,7 @@ import { contactsToTagsRelations } from "./contact-to-tag"
 import { conversationRelations } from "./conversation"
 import { conversationParticipantRelations } from "./conversation-participant"
 import { customFieldRelations } from "./custom-field"
+import { emailTopicRelations } from "./email-topic"
 import { errorLogRelations } from "./error-log"
 import { flowRelations } from "./flow"
 import { flowAnalyticsSessionRelations } from "./flow-analytics-session"
@@ -115,6 +116,7 @@ export const relations = {
   ...integrationWebchatRelations,
   ...integrationZaloRelations,
   ...invitationRelations,
+  ...emailTopicRelations,
   ...errorLogRelations,
   ...auditLogRelations,
   ...sessionRelations,
