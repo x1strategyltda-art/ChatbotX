@@ -87,6 +87,9 @@ importers:
       '@chatbotx.io/flow-config':
         specifier: workspace:*
         version: link:../../packages/flow-config
+      '@chatbotx.io/imports':
+        specifier: workspace:*
+        version: link:../../packages/imports
       '@chatbotx.io/integration-chatbotx':
         specifier: workspace:*
         version: link:../../integrations/chatbotx
@@ -583,6 +586,9 @@ importers:
       '@chatbotx.io/flow-config':
         specifier: workspace:*
         version: link:../../packages/flow-config
+      '@chatbotx.io/imports':
+        specifier: workspace:*
+        version: link:../../packages/imports
       '@chatbotx.io/integration-chatbotx':
         specifier: workspace:*
         version: link:../../integrations/chatbotx
@@ -1629,6 +1635,34 @@ importers:
       '@types/react':
         specifier: 19.2.14
         version: 19.2.14
+      typescript:
+        specifier: ^5
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/node@24.12.2)(jiti@2.6.1)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.14.6(@types/node@24.12.2)(typescript@5.9.3))(tsx@4.21.0)(yaml@2.8.3)
+
+  packages/imports:
+    dependencies:
+      '@chatbotx.io/database':
+        specifier: workspace:*
+        version: link:../database
+      csv-parse:
+        specifier: ^6.2.1
+        version: 6.2.1
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
+    devDependencies:
+      '@chatbotx.io/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      '@chatbotx.io/vitest-config':
+        specifier: workspace:*
+        version: link:../vitest-config
+      '@types/node':
+        specifier: 24.x
+        version: 24.12.2
       typescript:
         specifier: ^5
         version: 5.9.3
@@ -7779,6 +7813,9 @@ packages:
 
   csstype@3.2.3:
     resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
+
+  csv-parse@6.2.1:
+    resolution: {integrity: sha512-LRLMV+UCyfMokp8Wb411duBf1gaBKJfOfBWU9eHMJ+b+cJYZsNu3AFmjJf3+yPGd59Exz1TsMjaSFyxnYB9+IQ==}
 
   currency-codes@2.2.0:
     resolution: {integrity: sha512-vpbQc5sEYHGdTVAYUhHnKv0DWiYLRvzl/KKyqeHzBh7HD/j3UlWoScpZ9tN/jG6w2feddWoObsBbaNVu5yDapg==}
@@ -17189,6 +17226,8 @@ snapshots:
       rrweb-cssom: 0.8.0
 
   csstype@3.2.3: {}
+
+  csv-parse@6.2.1: {}
 
   currency-codes@2.2.0:
     dependencies:

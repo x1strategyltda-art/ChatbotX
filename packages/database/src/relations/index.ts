@@ -36,12 +36,14 @@ import { auditLogRelations } from "./enterprise/audit-log"
 import { customDomainRelations } from "./enterprise/custom-domain"
 import { platformSettingRelations } from "./enterprise/platform-setting"
 import { errorLogRelations } from "./error-log"
+import { fileRelations } from "./file"
 import { flowRelations } from "./flow"
 import { flowAnalyticsSessionRelations } from "./flow-analytics-session"
 import { flowNodeStatRelations } from "./flow-node-stat"
 import { flowRunRelations } from "./flow-run"
 import { flowVersionRelations } from "./flow-version"
 import { folderRelations } from "./folder"
+import { importRelations } from "./import"
 import { inboxRelations } from "./inbox"
 import { inboxContactStatsRelations } from "./inbox-contact-stats"
 import { inboxTeamRelations } from "./inbox-team"
@@ -107,6 +109,8 @@ export const relations = {
   ...inboxRelations,
   ...conversationParticipantRelations,
   ...folderRelations,
+  ...importRelations,
+  ...fileRelations,
   ...flowRunRelations,
   ...flowVersionRelations,
   ...inboxTeamMemberRelations,
