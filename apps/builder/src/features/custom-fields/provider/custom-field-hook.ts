@@ -158,7 +158,7 @@ export const useCustomFieldSelectOptions = (
 
     return allFields.map((customField) => ({
       label: customField.name,
-      value: customField.id,
+      value: prefix ? `${prefix}:${customField.id}` : customField.id.toString(),
       Icon: customFieldIconsMap[customField.type as CustomFieldType],
     }))
   }, [

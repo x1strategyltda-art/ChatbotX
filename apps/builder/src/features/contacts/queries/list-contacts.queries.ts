@@ -1,11 +1,11 @@
 import { db, relationsFilterToSQL } from "@chatbotx.io/database/client"
+import { applyContactFilter } from "@chatbotx.io/database/queries"
 import { contactModel } from "@chatbotx.io/database/schema"
 import {
   getPaginationWithDefaults,
   parseOrderByAsObject,
 } from "@chatbotx.io/database/utils"
 import { assertCurrentUserCanAccessChatbot } from "@/lib/auth/utils"
-import { applyContactFilter } from "../apply-contact-filter"
 import type {
   ListContactsRequest,
   ListContactsResponse,
@@ -88,7 +88,9 @@ async function getTotalContactsFromStats(
   }
 }
 
-const generateWhere = (input: ListContactsRequest) => {
+export const generateWhere = (
+  input: Pick<ListContactsRequest, "workspaceId" | "keyword" | "contactFilter">,
+) => {
   const where: Record<string, unknown> = {
     workspaceId: input.workspaceId,
     ...(input.keyword
