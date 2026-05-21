@@ -37,14 +37,13 @@ export async function createSmtp(
   workspaceId: string,
   input: CreateSmtpRequest,
 ) {
-  let { host, port, ...rest } = input
-  await verifySmtpConnection(input)
+  const { fromAddress, ...rest } = input
+  const { host, port } =
+    input.provider === "other"
+      ? { host: input.host, port: input.port }
+      : smtpHostMap[input.provider]
 
-  if (input.provider !== "other") {
-    const defaultHostAndPort = smtpHostMap[input.provider]
-    host = defaultHostAndPort.host
-    port = defaultHostAndPort.port
-  }
+  await verifySmtpConnection({ ...input, host, port })
 
   return db.transaction(async (tx) => {
     const smtpId = createId()
@@ -66,6 +65,7 @@ export async function createSmtp(
       name,
       workspaceId,
       inboxId: inbox.id,
+      fromAddress,
       auth: {
         authType: "custom" as const,
         ...rest,
@@ -83,41 +83,35 @@ export async function updateSmtp(
   id: string,
   input: UpdateSmtpRequest,
 ) {
-  await verifySmtpConnection(input)
-
   const integration = await findOrFail({
     table: integrationSmtpModel,
     where: { id, workspaceId },
     message: "SMTP integration not found",
   })
 
-  const currentAuth = integration.auth as SmtpAuthValue
-  const provider = input.provider ?? currentAuth.provider
+  const { host, port } =
+    input.provider === "other"
+      ? { host: input.host, port: input.port }
+      : smtpHostMap[input.provider]
 
-  let host = input.host || currentAuth.host
-  let port = input.port || currentAuth.port
-
-  if (provider !== "other") {
-    const defaults = smtpHostMap[provider]
-    host = defaults.host
-    port = defaults.port
-  }
+  await verifySmtpConnection({ ...input, host, port })
 
   const updatedAuth: SmtpAuthValue = {
     authType: "custom",
-    provider,
+    provider: input.provider,
     host,
     port,
-    username: input.username ?? currentAuth.username,
-    password: input.password ?? currentAuth.password,
-    fromAddress: input.fromAddress ?? currentAuth.fromAddress,
+    username: input.username,
+    password: input.password,
   }
-
-  const name = input.username ?? integration.name
 
   return db
     .update(integrationSmtpModel)
-    .set({ auth: updatedAuth, name })
+    .set({
+      auth: updatedAuth,
+      name: input.username,
+      fromAddress: input.fromAddress,
+    })
     .where(eq(integrationSmtpModel.id, integration.id))
     .returning()
     .then((result) => result[0])
