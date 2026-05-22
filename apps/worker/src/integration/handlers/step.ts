@@ -38,6 +38,8 @@ import {
   removeContactSequence,
   removeContactTag,
   setContactCustomField,
+  subscribeBroadcast,
+  unsubscribeBroadcast,
 } from "./contact"
 import { type ExecuteStepProps, seekConnectedNode } from "./flow"
 import { handleAIGenerateText } from "./generate-text"
@@ -349,8 +351,8 @@ export const flowStepHandlers: Record<
   [stepTypes.enum.startExternalFlow]: startExternalFlow,
   [stepTypes.enum.chooseChannel]: undefined,
   [stepTypes.enum.filterContact]: undefined,
-  [stepTypes.enum.subscribeBroadcast]: undefined,
-  [stepTypes.enum.unsubscribeBroadcast]: undefined,
+  [stepTypes.enum.subscribeBroadcast]: subscribeBroadcast,
+  [stepTypes.enum.unsubscribeBroadcast]: unsubscribeBroadcast,
   [stepTypes.enum.splitTraffic]: splitTraffic,
   [stepTypes.enum.startAnotherNode]: startAnotherNode,
   [stepTypes.enum.startExternalNode]: startExternalNode,
