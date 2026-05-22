@@ -22,8 +22,8 @@ import {
   emitContactCreated,
   setWebhookExecutionContext,
 } from "@chatbotx.io/events"
-import { RealtimeEventType } from "@chatbotx.io/partysocket-config"
 import { messageEventTypeSchema } from "@chatbotx.io/flow-config"
+import { RealtimeEventType } from "@chatbotx.io/partysocket-config"
 import {
   type AuthValue,
   type IncomingAttachment,
@@ -182,10 +182,7 @@ export const receiveMessage = async (
         occurredAt: newMessage.createdAt,
         sourceId: newMessage.sourceId ?? undefined,
       }).catch((error) => {
-        logger.error(
-          error,
-          "[receiveMessage] Failed to emit message:received",
-        )
+        logger.error(error, "[receiveMessage] Failed to emit message:received")
       })
 
       if (postbackAction) {

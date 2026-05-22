@@ -8,7 +8,10 @@ import {
   findOrFail,
   type Transaction,
 } from "@chatbotx.io/database/client"
-import type { ConversationAttributes } from "@chatbotx.io/database/partials"
+import {
+  type ConversationAttributes,
+  channelTypes,
+} from "@chatbotx.io/database/partials"
 import {
   attachmentModel,
   contactInboxModel,
@@ -25,6 +28,7 @@ import type {
 import { getPublicUrl } from "@chatbotx.io/database/utils"
 import { emit } from "@chatbotx.io/event-bus"
 import { type UploadedFile, uploadMultipleFiles } from "@chatbotx.io/filesystem"
+import { messageEventTypeSchema } from "@chatbotx.io/flow-config"
 import { RealtimeEventType } from "@chatbotx.io/partysocket-config"
 import { createId } from "@chatbotx.io/utils"
 import {
@@ -36,6 +40,7 @@ import {
 import { randomString } from "remeda"
 import type { AttachmentResource } from "@/features/attachments/schema/resource"
 import { ensureConversationActive } from "@/features/conversations/queries/bot-state"
+import { logger } from "@/lib/log"
 import { actionClient } from "@/lib/safe-action"
 import {
   type CreateWebchatMessageRequest,
@@ -166,6 +171,21 @@ export async function handleCreateWebchatMessage({
   if (!newMessage) {
     return null
   }
+
+  emit(messageEventTypeSchema.enum["message:received"], {
+    workspaceId: conversation.workspaceId,
+    contactId: contactInbox.contactId,
+    contactInboxId: contactInbox.id,
+    channel: channelTypes.enum.webchat,
+    inboxId: contactInbox.inboxId,
+    occurredAt: newMessage.createdAt ?? new Date(),
+    sourceId: newMessage.sourceId ?? undefined,
+  }).catch((error) => {
+    logger.error(
+      error,
+      "[createWebchatMessage] Failed to emit message:received",
+    )
+  })
 
   // Broadcast realtime message via worker (non-blocking enqueue)
   const promises: Promise<unknown>[] = []

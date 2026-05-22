@@ -38,5 +38,9 @@ export const userRelations = defineRelationsPart(schema, (r) => ({
       from: r.userModel.id,
       to: r.organizationMemberModel.userId,
     }),
+    billings: r.many.billingModel({
+      from: r.userModel.id,
+      to: r.billingModel.userId,
+    }),
   },
 }))

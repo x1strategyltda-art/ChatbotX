@@ -111,3 +111,6 @@ export type AnalyticsSequenceEventModel =
   typeof schema.analyticsSequenceEventModel.$inferSelect
 export type AnalyticsFlowNodeEventModel =
   typeof schema.analyticsFlowNodeEventModel.$inferSelect
+export type BillingModel = typeof schema.billingModel.$inferSelect
+export type WorkspaceMacModel = typeof schema.workspaceMacModel.$inferSelect
+export type BillingMacModel = typeof schema.billingMacModel.$inferSelect
