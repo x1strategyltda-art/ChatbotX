@@ -4,35 +4,16 @@ import {
   resolvePlatformSettings,
 } from "@chatbotx.io/business"
 import { getPublicFileUrl } from "@chatbotx.io/business/utils"
-import { db, findOrFail } from "@chatbotx.io/database/client"
+import { db } from "@chatbotx.io/database/client"
 import type { IntegrationType } from "@chatbotx.io/database/partials"
-import {
-  attachmentModel,
-  contactInboxModel,
-  contactModel,
-  conversationModel,
-  messageModel,
-  workspaceUsageModel,
-} from "@chatbotx.io/database/schema"
+import { attachmentModel, messageModel } from "@chatbotx.io/database/schema"
 import type {
-  ContactInboxModel,
-  ContactModel,
   ConversationModel,
-  InboxModel,
   MessageModel,
 } from "@chatbotx.io/database/types"
-import { emit } from "@chatbotx.io/event-bus"
-import {
-  emitContactCreated,
-  setWebhookExecutionContext,
-} from "@chatbotx.io/events"
+import { setWebhookExecutionContext } from "@chatbotx.io/events"
 import { RealtimeEventType } from "@chatbotx.io/partysocket-config"
-import {
-  type AuthValue,
-  type IncomingAttachment,
-  type IncomingContact,
-  SdkException,
-} from "@chatbotx.io/sdk"
+import { type IncomingAttachment, SdkException } from "@chatbotx.io/sdk"
 import { createId } from "@chatbotx.io/utils"
 import {
   IntegrationJobAction,
@@ -44,6 +25,7 @@ import {
   allIntegrations,
   integrationService,
 } from "../../services/integrations"
+import { detectContactAndConversation } from "./upsert-contact-message"
 
 export const receiveMessage = async (
   props: IntegrationJobReceiveMessage["data"],
@@ -100,11 +82,15 @@ export const receiveMessage = async (
     ref,
   } = parsedMessage
 
-  const { contactInbox, conversation } = await detectContactAndConversation({
+  const detected = await detectContactAndConversation({
     incomingContact,
     inbox,
     integrationRow,
   })
+  if (!detected) {
+    throw new SdkException("Unable to resolve contact and conversation")
+  }
+  const { contactInbox, conversation } = detected
 
   let createdMessage: MessageModel | null = null
   if (incomingMessage) {
@@ -227,168 +213,3 @@ export const receiveMessage = async (
     ref,
   }
 }
-
-const detectContactAndConversation = async (props: {
-  inbox: InboxModel
-  incomingContact: IncomingContact
-  integrationRow: {
-    id: string
-    auth: AuthValue
-    inboxId: string
-    [x: string]: unknown
-  }
-}): Promise<{
-  contactInbox: ContactInboxModel
-  conversation: ConversationModel
-}> => {
-  const { incomingContact, inbox, integrationRow } = props
-  let contactData: typeof contactModel.$inferInsert = {
-    ...incomingContact,
-    workspaceId: inbox.workspaceId,
-  }
-
-  const { contactInbox, conversation, newContact } = await db.transaction(
-    async (tx) => {
-      let contactInbox: ContactInboxModel | null | undefined = null
-      let conversation: ConversationModel | null | undefined = null
-      let newContact: ContactModel | null | undefined = null
-
-      contactInbox = await tx.query.contactInboxModel.findFirst({
-        where: {
-          inboxId: inbox.id,
-          channel: inbox.channel,
-          sourceId: incomingContact.sourceId,
-        },
-      })
-
-      if (contactInbox) {
-        conversation = await findOrFail({
-          table: conversationModel,
-          where: {
-            workspaceId: inbox.workspaceId,
-            contactId: contactInbox.contactId,
-          },
-        })
-      } else {
-        if (canGetUserProfileIfNeeded(inbox.channel)) {
-          const profileIntegration = allIntegrations[inbox.channel]
-          if (profileIntegration) {
-            const profileCtx = await buildContext({
-              workspaceId: inbox.workspaceId,
-              integrationType: inbox.channel,
-              integration: integrationRow,
-            })
-            const userProfile = await profileIntegration.runChannelHandler(
-              "contact",
-              "getProfile",
-              {
-                ctx: profileCtx,
-                data: { sourceId: incomingContact.sourceId },
-              },
-            )
-            contactData = {
-              ...contactData,
-              ...userProfile,
-            }
-          }
-        }
-
-        const workspaceUsage = await findOrFail({
-          table: workspaceUsageModel,
-          where: { workspaceId: inbox.workspaceId },
-          message: "Workspace usage not found",
-        })
-        if (workspaceUsage.contactsCount >= workspaceUsage.maxContacts) {
-          throw new Error("Max contacts reached")
-        }
-
-        newContact = await tx
-          .insert(contactModel)
-          .values({
-            id: createId(),
-            ...contactData,
-            lastActivityAt: new Date(),
-          })
-          .returning()
-          .then((result) => result[0])
-        if (!newContact) {
-          throw new Error("Contact not found")
-        }
-
-        contactInbox = await tx
-          .insert(contactInboxModel)
-          .values({
-            id: createId(),
-            inboxId: inbox.id,
-            contactId: newContact.id,
-            originalContactId: newContact.id,
-            source: inbox.channel,
-            sourceId: incomingContact.sourceId,
-            channel: inbox.channel,
-          })
-          .returning()
-          .then((result) => result[0])
-
-        conversation = await tx
-          .insert(conversationModel)
-          .values({
-            id: createId(),
-            workspaceId: inbox.workspaceId,
-            contactId: newContact.id,
-          })
-          .returning()
-          .then((result) => result[0])
-      }
-      if (!contactInbox) {
-        throw new Error("Contact inbox not found")
-      }
-      if (!conversation) {
-        throw new Error("Conversation not found")
-      }
-
-      return { contactInbox, conversation, newContact }
-    },
-  )
-
-  if (newContact) {
-    try {
-      await emitContactCreated(
-        newContact.workspaceId,
-        newContact.id,
-        newContact.firstName || undefined,
-        newContact.phoneNumber || undefined,
-        newContact.email || undefined,
-      )
-    } catch (error) {
-      console.error("Failed to emit contactCreated event:", error)
-    }
-
-    if (contactInbox.sourceId) {
-      emit("analytics:dashboard", {
-        eventType: "contact:created",
-        workspaceId: newContact.workspaceId,
-        contactId: contactInbox.id,
-        occurredAt: newContact.createdAt,
-        source: contactInbox.source,
-        sourceId: contactInbox.sourceId,
-        channel: contactInbox.channel,
-        metadata: {
-          triggerContext: {
-            triggerSource: "worker",
-            triggerHandler: "receiveMessage",
-            triggerType: "contact_created",
-          },
-        },
-      }).catch((error) => {
-        logger.error(error, "[receiveMessage] Failed to emit contact:created")
-      })
-    }
-  }
-
-  return { contactInbox, conversation }
-}
-
-const canGetUserProfileIfNeeded = (integrationType: string) =>
-  integrationType === "messenger" ||
-  integrationType === "zalo" ||
-  integrationType === "telegram"

@@ -17,6 +17,7 @@ import { finalizeBroadcasts } from "./handlers/finalize-broadcasts"
 import { prepareBroadcast } from "./handlers/prepare-broadcast"
 import { processBroadcastContacts } from "./handlers/process-broadcast-contacts"
 import { registerSchedules } from "./handlers/register-schedules"
+import { scanCoexistRuns } from "./handlers/scan-coexist-runs"
 import { scanSmartDelay } from "./handlers/scan-smart-delay"
 
 async function startScheduleWorker() {
@@ -68,6 +69,10 @@ async function startScheduleWorker() {
 
         case ScheduleJobData.scanSmartDelay:
           await scanSmartDelay()
+          return
+
+        case ScheduleJobData.scanCoexistRuns:
+          await scanCoexistRuns()
           return
 
         default:

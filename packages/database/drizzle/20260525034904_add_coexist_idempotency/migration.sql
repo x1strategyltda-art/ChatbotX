@@ -1,0 +1,2 @@
+ALTER TABLE "WhatsappCoexistStaging" ADD COLUMN "payloadHash" text;--> statement-breakpoint
+CREATE UNIQUE INDEX "WhatsappCoexistStaging_phone_hash_uq" ON "WhatsappCoexistStaging" ("phoneNumberId","payloadHash");

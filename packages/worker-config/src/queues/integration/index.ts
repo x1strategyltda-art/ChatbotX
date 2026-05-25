@@ -31,6 +31,9 @@ export const IntegrationJobAction = {
   assignConversation: "assignConversation",
   createMessage: "createMessage",
   sendEmail: "sendEmail",
+  coexistWhatsappBuffer: "coexistWhatsappBuffer",
+  coexistWhatsappFlush: "coexistWhatsappFlush",
+  coexistMessengerSync: "coexistMessengerSync",
 } as const
 
 export type IntegrationJobReceiveMessage = {
@@ -193,6 +196,34 @@ export type IntegrationJobSendSequenceFlow = {
   }
 }
 
+/** Buffers a raw WhatsApp Coexistence history payload into the staging table. */
+export type IntegrationJobCoexistWhatsappBuffer = {
+  type: typeof IntegrationJobAction.coexistWhatsappBuffer
+  data: {
+    phoneNumberId: string
+    payload: unknown
+  }
+}
+
+/** Flushes buffered WhatsApp staging rows into Contact/Message once enabled. */
+export type IntegrationJobCoexistWhatsappFlush = {
+  type: typeof IntegrationJobAction.coexistWhatsappFlush
+  data: {
+    runId: string
+    phoneNumberId: string
+  }
+}
+
+/** Pulls historical Messenger conversations/messages via the Graph API. */
+export type IntegrationJobCoexistMessengerSync = {
+  type: typeof IntegrationJobAction.coexistMessengerSync
+  data: {
+    runId: string
+    integrationId: string
+    workspaceId: string
+  }
+}
+
 export type IntegrationJobData =
   | IntegrationJobReceiveMessage
   | IntegrationJobMessageStatus
@@ -209,6 +240,9 @@ export type IntegrationJobData =
   | IntegrationJobCreateMessage
   | IntegrationJobProcessAutomatedResponse
   | IntegrationJobSendSequenceFlow
+  | IntegrationJobCoexistWhatsappBuffer
+  | IntegrationJobCoexistWhatsappFlush
+  | IntegrationJobCoexistMessengerSync
 
 export const integrationQueue =
   process.env.NEXT_PHASE === "phase-production-build"

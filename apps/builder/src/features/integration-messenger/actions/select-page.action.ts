@@ -73,6 +73,8 @@ export const selectPageAction = authActionClient
           throw new ChatbotXException("Page is already connected")
         }
 
+        let integrationId = ""
+
         await db.transaction(async (tx) => {
           // create new workspace if not exists
           if (!workspaceId) {
@@ -163,6 +165,8 @@ export const selectPageAction = authActionClient
             .returning()
             .then((result) => result[0])
 
+          integrationId = integrationRow.id
+
           const brandingCtx = await buildContext({
             workspaceId,
             integrationType: "messenger",
@@ -182,6 +186,7 @@ export const selectPageAction = authActionClient
 
         return {
           workspaceId,
+          integrationId,
         }
       } catch (error) {
         if (isDatabaseError(error) && error.cause.code === "23505") {

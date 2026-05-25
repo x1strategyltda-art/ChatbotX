@@ -64,4 +64,18 @@ export const registerSchedules = async () => {
       },
     },
   )
+
+  await scheduleQueue.upsertJobScheduler(
+    ScheduleJobData.scanCoexistRuns,
+    {
+      pattern: "* * * * *",
+    },
+    {
+      name: ScheduleJobData.scanCoexistRuns,
+      data: {
+        type: ScheduleJobData.scanCoexistRuns,
+        data: {},
+      },
+    },
+  )
 }

@@ -305,13 +305,20 @@ async function subscribeManualWebhook(
 
 function buildResult(params: {
   isManual: boolean
+  isCoexist: boolean
   workspaceId: string
   integrationId: string
   webhookUrl: string
   verifyToken: string
 }): ConnectWhatsappResult {
-  const { isManual, workspaceId, integrationId, webhookUrl, verifyToken } =
-    params
+  const {
+    isManual,
+    isCoexist,
+    workspaceId,
+    integrationId,
+    webhookUrl,
+    verifyToken,
+  } = params
 
   if (isManual) {
     return {
@@ -323,6 +330,9 @@ function buildResult(params: {
   return {
     type: "redirect",
     redirectUrl: `/space/${workspaceId}/dashboard`,
+    integrationId,
+    workspaceId,
+    isCoexist,
   }
 }
 
@@ -421,8 +431,11 @@ export const connectWhatsappAction = authActionClient
 
         revalidateCacheTags(`users:${ctx.user.id}#workspaceMembers`)
 
+        const isCoexist = parsedInput.transferPhoneNumber === true
+
         return buildResult({
           isManual,
+          isCoexist,
           workspaceId,
           integrationId,
           webhookUrl,

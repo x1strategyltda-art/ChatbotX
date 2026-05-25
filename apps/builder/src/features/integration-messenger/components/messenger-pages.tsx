@@ -10,9 +10,10 @@ import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hoo
 import { Loader2Icon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useWatch } from "react-hook-form"
 import { toast } from "sonner"
+import { CoexistPopup } from "@/features/shared/coexist-popup"
 import { selectPageAction } from "../actions/select-page.action"
 import { selectPageRequest } from "../schema/action"
 
@@ -27,6 +28,10 @@ export function FacebookPages({
 }) {
   const t = useTranslations()
   const router = useRouter()
+  const [showCoexist, setShowCoexist] = useState<{
+    integrationId: string
+    resolvedWorkspaceId: string
+  } | null>(null)
 
   const { form, handleSubmitWithAction } = useHookFormAction(
     selectPageAction,
@@ -43,12 +48,13 @@ export function FacebookPages({
       },
       actionProps: {
         onSuccess: ({ data }) => {
-          onSuccess?.()
-          if (workspaceId) {
-            router.push(`/space/${data.workspaceId}/dashboard`)
-          } else {
-            router.push("/")
-          }
+          // Do NOT redirect or close parent dialog here — that would unmount
+          // CoexistPopup before the user can choose. handleCoexistDone runs
+          // those side effects after the popup resolves.
+          setShowCoexist({
+            integrationId: data.integrationId,
+            resolvedWorkspaceId: data.workspaceId ?? "",
+          })
         },
         onError: ({ error }) => {
           if (error.serverError) {
@@ -69,36 +75,57 @@ export function FacebookPages({
     setValue("pageName", selectPage?.name ?? "")
   }, [watchedPageId, setValue, pages])
 
+  const handleCoexistDone = (resolvedWorkspaceId: string) => {
+    onSuccess?.()
+    if (workspaceId) {
+      router.push(
+        `/space/${resolvedWorkspaceId}/settings/channels?channel=messenger`,
+      )
+    } else {
+      router.push("/")
+    }
+  }
+
   return (
-    <Form {...form}>
-      <form className="space-y-6" onSubmit={handleSubmitWithAction}>
-        <div className="hidden">
-          <InputField name="accessToken" type="hidden" />
-          <InputField name="pageName" type="hidden" />
-        </div>
+    <>
+      {showCoexist && (
+        <CoexistPopup
+          channel="messenger"
+          integrationId={showCoexist.integrationId}
+          onDone={() => handleCoexistDone(showCoexist.resolvedWorkspaceId)}
+          workspaceId={showCoexist.resolvedWorkspaceId}
+        />
+      )}
+      <Form {...form}>
+        <form className="space-y-6" onSubmit={handleSubmitWithAction}>
+          <div className="hidden">
+            <InputField name="accessToken" type="hidden" />
+            <InputField name="pageName" type="hidden" />
+          </div>
 
-        <div className="max-h-75 overflow-y-auto pr-1">
-          <RadioGroupField
-            label={t("messenger.selectFacebookPage")}
-            name="pageId"
-            options={pages.map((page) => ({
-              value: page.id,
-              label: page.name,
-            }))}
-            required
-          />
-        </div>
+          <div className="max-h-75 overflow-y-auto pr-1">
+            <RadioGroupField
+              label={t("messenger.selectFacebookPage")}
+              name="pageId"
+              options={pages.map((page) => ({
+                value: page.id,
+                label: page.name,
+              }))}
+              required
+            />
+          </div>
 
-        <Button
-          disabled={!form.formState.isValid || form.formState.isSubmitting}
-          type="submit"
-        >
-          {form.formState.isSubmitting && (
-            <Loader2Icon className="animate-spin" />
-          )}
-          {t("actions.continue")}
-        </Button>
-      </form>
-    </Form>
+          <Button
+            disabled={!form.formState.isValid || form.formState.isSubmitting}
+            type="submit"
+          >
+            {form.formState.isSubmitting && (
+              <Loader2Icon className="animate-spin" />
+            )}
+            {t("actions.continue")}
+          </Button>
+        </form>
+      </Form>
+    </>
   )
 }

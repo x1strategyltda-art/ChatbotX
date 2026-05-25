@@ -1537,6 +1537,16 @@
     "refreshPermissions": "Làm mới quyền",
     "title": "Instagram"
   },
+  "coexist": {
+    "title": "Đồng bộ liên hệ và lịch sử chat hiện có?",
+    "descriptionWhatsapp": "Khi bật, ChatbotX sẽ nhập liên hệ và tối đa 6 tháng lịch sử chat từ số WhatsApp này. WhatsApp có thể mất tới 24 giờ để gửi dữ liệu lịch sử.",
+    "descriptionMessenger": "Khi bật, ChatbotX sẽ nhập toàn bộ liên hệ Messenger hiện có và toàn bộ lịch sử hội thoại từ Page này. Page lớn có thể mất vài phút để hoàn tất.",
+    "enable": "Bật đồng bộ",
+    "decline": "Không đồng bộ",
+    "billingNote": "Liên hệ đã nhập sẽ tính vào hạn mức liên hệ hoạt động hàng tháng và có thể ảnh hưởng tới hóa đơn của bạn.",
+    "toggleLabel": "Đồng bộ liên hệ và lịch sử chat hiện có",
+    "toggleHelper": "Bật lại chỉ hoạt động nếu Meta còn đệm dữ liệu (trong vòng 24 giờ kể từ khi onboarding). Nếu không, hãy ngắt kết nối và kết nối lại."
+  },
   "messenger": {
     "description": "Tích hợp này cho phép bạn tạo bot Messenger.",
     "welcomeMessage": "Tin nhắn chào mừng",

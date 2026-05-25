@@ -30,6 +30,7 @@ import { useCallback, useEffect, useRef, useState, useTransition } from "react"
 import { useFormContext, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 import { InboxIcon } from "@/features/inboxes/components/inbox-icon"
+import { CoexistPopup } from "@/features/shared/coexist-popup"
 import { clientErrorHandler } from "@/lib/errors/client-handler"
 import { connectWhatsappAction } from "../actions/connect.action"
 import { connectWhatsappSchema, type ManualOnboardingResult } from "../schemas"
@@ -116,6 +117,11 @@ export default function WhatsappCreate({
   const router = useRouter()
   const [manualResult, setManualResult] =
     useState<ManualOnboardingResult | null>(null)
+  const [showCoexist, setShowCoexist] = useState<{
+    integrationId: string
+    workspaceId: string
+    redirectUrl: string
+  } | null>(null)
 
   // Form setup
   const { form, handleSubmitWithAction } = useHookFormAction(
@@ -134,7 +140,15 @@ export default function WhatsappCreate({
             setManualResult(data.data)
             return
           }
-          router.push(data.redirectUrl)
+          if (data.isCoexist) {
+            setShowCoexist({
+              integrationId: data.integrationId,
+              workspaceId: data.workspaceId,
+              redirectUrl: data.redirectUrl,
+            })
+          } else {
+            router.push(data.redirectUrl)
+          }
         },
       },
       formProps: {
@@ -247,33 +261,45 @@ export default function WhatsappCreate({
   }, [watchTransferPhoneNumber, setValue, updateVisibility])
 
   return (
-    <Card className={`${CARD_MARGIN} ${MAX_CARD_WIDTH}`}>
-      <CardHeader>
-        <CardTitle>
-          <InboxIcon channel="whatsapp" size="large" />
-        </CardTitle>
-        <CardDescription />
-      </CardHeader>
-      <CardContent>
-        {manualResult ? (
-          <WhatsappOnboardingResult result={manualResult} />
-        ) : (
-          <Form {...form}>
-            <form className="space-y-4" onSubmit={handleSubmitWithAction}>
-              {watchManualConnect ? (
-                <ManualConnectSection watchManualConnect={watchManualConnect} />
-              ) : (
-                <SdkConnectSection
-                  settings={settings}
-                  visibility={visibility}
-                  watchManualConnect={watchManualConnect}
-                />
-              )}
-            </form>
-          </Form>
-        )}
-      </CardContent>
-    </Card>
+    <>
+      {showCoexist && (
+        <CoexistPopup
+          channel="whatsapp"
+          integrationId={showCoexist.integrationId}
+          onDone={() => router.push(showCoexist.redirectUrl)}
+          workspaceId={showCoexist.workspaceId}
+        />
+      )}
+      <Card className={`${CARD_MARGIN} ${MAX_CARD_WIDTH}`}>
+        <CardHeader>
+          <CardTitle>
+            <InboxIcon channel="whatsapp" size="large" />
+          </CardTitle>
+          <CardDescription />
+        </CardHeader>
+        <CardContent>
+          {manualResult ? (
+            <WhatsappOnboardingResult result={manualResult} />
+          ) : (
+            <Form {...form}>
+              <form className="space-y-4" onSubmit={handleSubmitWithAction}>
+                {watchManualConnect ? (
+                  <ManualConnectSection
+                    watchManualConnect={watchManualConnect}
+                  />
+                ) : (
+                  <SdkConnectSection
+                    settings={settings}
+                    visibility={visibility}
+                    watchManualConnect={watchManualConnect}
+                  />
+                )}
+              </form>
+            </Form>
+          )}
+        </CardContent>
+      </Card>
+    </>
   )
 }
 

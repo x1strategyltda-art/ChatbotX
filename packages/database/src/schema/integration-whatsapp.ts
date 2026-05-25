@@ -1,4 +1,4 @@
-import { jsonb, pgTable, text, uniqueIndex } from "drizzle-orm/pg-core"
+import { boolean, jsonb, pgTable, text, uniqueIndex } from "drizzle-orm/pg-core"
 import { bigintAsString, sharedColumns } from "../partials/shared"
 import { inboxModel } from "./inbox"
 import { workspaceModel } from "./workspace"
@@ -13,6 +13,7 @@ export const integrationWhatsappModel = pgTable(
     businessId: text().notNull(),
     name: text().notNull(),
     displayPhoneNumber: text().notNull().default(""),
+    coexistEnabled: boolean().notNull().default(false),
     workspaceId: bigintAsString()
       .notNull()
       .references(() => workspaceModel.id, {
