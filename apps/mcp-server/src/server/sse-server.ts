@@ -5,10 +5,10 @@ import {
   type ServerResponse,
 } from "node:http"
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js"
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js"
 import { env } from "../env"
 import type { CreateMcpServerOptions } from "./create-mcp-server"
-import { LegacySseTransport } from "./legacy-sse-transport"
 
 type SseSession = {
   server: McpServer
@@ -18,7 +18,7 @@ type SseSession = {
 
 type LegacySseSession = {
   server: McpServer
-  transport: LegacySseTransport
+  transport: SSEServerTransport
   setApiKey: (apiKey: string | undefined) => void
 }
 
@@ -144,12 +144,12 @@ const handleSseRequest = async (
   }
 
   const sessionId = getSessionId(req)
+
+  // No session ID → old SSE protocol (Claude Desktop, Claude CLI -t sse)
   if (!sessionId) {
     const apiKeyState = createSessionApiKeyState(getApiTokenFromRequest(req))
-    const server = createMcpServer({
-      getApiKey: apiKeyState.getApiKey,
-    })
-    const transport = new LegacySseTransport(
+    const server = createMcpServer({ getApiKey: apiKeyState.getApiKey })
+    const transport = new SSEServerTransport(
       env.CHATBOTX_MCP_MESSAGES_PATH,
       res,
     )
@@ -158,15 +158,12 @@ const handleSseRequest = async (
       transport,
       setApiKey: apiKeyState.setApiKey,
     })
-
-    res.on("close", () => {
-      legacySseSessions.delete(transport.sessionId)
-    })
-
+    res.on("close", () => legacySseSessions.delete(transport.sessionId))
     await server.connect(transport)
     return
   }
 
+  // Has session ID → Streamable HTTP GET for server-initiated messages
   const session = sseSessions.get(sessionId)
   if (!session) {
     writePlainText(res, 404, "Unknown sessionId")
@@ -251,8 +248,12 @@ const handleMessagesRequest = async (
 
     await server.connect(transport)
     await transport.handleRequest(req, res, parsedBody)
-  } catch {
-    writePlainText(res, 400, "Invalid JSON body")
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      writePlainText(res, 400, "Invalid JSON body")
+      return
+    }
+    throw error
   }
 }
 

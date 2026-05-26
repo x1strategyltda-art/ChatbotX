@@ -11,6 +11,7 @@ export const env = createEnv({
     CHATBOTX_MCP_PORT: z.coerce.number().int().positive().default(3333),
     CHATBOTX_MCP_SSE_PATH: z.string().default("/sse"),
     CHATBOTX_MCP_MESSAGES_PATH: z.string().default("/messages"),
+    CHATBOTX_MCP_CORS_ORIGIN: z.string().default("*"),
   },
   runtimeEnv: process.env,
 })
